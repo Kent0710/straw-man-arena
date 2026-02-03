@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { PlayerType, Gender } from "@/lib/types";
@@ -28,7 +28,7 @@ import {
 const ARENA_WIDTH = 1200;
 const ARENA_HEIGHT = 600;
 
-const GamePage = () => {
+const GamePageContent = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const socketRef = useRef<WebSocket | null>(null);
@@ -338,6 +338,14 @@ const GamePage = () => {
                 />
             )}
         </div>
+    );
+};
+
+const GamePage = () => {
+    return (
+        <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-neutral-900 text-white text-2xl">Loading game...</div>}>
+            <GamePageContent />
+        </Suspense>
     );
 };
 
