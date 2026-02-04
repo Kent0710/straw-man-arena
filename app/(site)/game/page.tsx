@@ -132,7 +132,9 @@ const GamePageContent = () => {
         }
 
         // 2. Establish WebSocket connection
-        const socket = new WebSocket("ws://localhost:5000/ws");
+        const socket = new WebSocket(
+            process.env.NEXT_PUBLIC_RENDER_WEBSOCKET || "ws://localhost:5000",
+        );
         socketRef.current = socket;
 
         socket.onopen = () => {
