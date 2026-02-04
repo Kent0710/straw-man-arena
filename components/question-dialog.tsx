@@ -144,7 +144,7 @@ const QuestionDialog: React.FC<QuestionDialogProps> = ({
     };
 
     return (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={() => {}} modal={true}>
             <DialogContent
                 className="text-white  shadow-green-500"
                 style={{
@@ -152,6 +152,10 @@ const QuestionDialog: React.FC<QuestionDialogProps> = ({
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                 }}
+                showCloseButton={false}
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+                onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle
