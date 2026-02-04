@@ -59,13 +59,34 @@ const Player: React.FC<PlayerComponentProps> = ({
     const isLocalPlayer = id === searchParams.get("playerId");
 
     const keysPressed = useRef<Set<string>>(new Set());
-    const [direction, setDirection] = useState<Direction>("front");
+    const [localDirection, setLocalDirection] = useState<Direction>("front");
     
     // Client-side prediction: local position for immediate feedback (local player only)
     const [localX, setLocalX] = useState(x);
     const [localY, setLocalY] = useState(y);
     const lastServerUpdateRef = useRef<number>(0);
     const pendingMovementRef = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
+
+    // Track previous position for remote players (refs = no re-renders)
+    const prevPosRef = useRef({ x, y });
+    const remoteDirRef = useRef<Direction>("front");
+
+    // Calculate direction for remote players inline (fastest possible - no hook overhead)
+    let direction: Direction;
+    if (isLocalPlayer) {
+        direction = localDirection;
+    } else {
+        const dx = x - prevPosRef.current.x;
+        const dy = y - prevPosRef.current.y;
+
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+            remoteDirRef.current = Math.abs(dx) >= Math.abs(dy)
+                ? (dx > 0 ? "right" : "left")
+                : (dy > 0 ? "front" : "back");
+            prevPosRef.current = { x, y };
+        }
+        direction = remoteDirRef.current;
+    }
 
     // Sync local position with server when server position changes significantly
     // This handles teleports, resets, and server corrections
@@ -122,9 +143,9 @@ const Player: React.FC<PlayerComponentProps> = ({
 
                 // Update direction for sprite
                 if (Math.abs(dx) >= Math.abs(dy)) {
-                    setDirection(dx > 0 ? "right" : "left");
+                    setLocalDirection(dx > 0 ? "right" : "left");
                 } else {
-                    setDirection(dy > 0 ? "front" : "back");
+                    setLocalDirection(dy > 0 ? "front" : "back");
                 }
 
                 // Client-side prediction: update local position immediately
