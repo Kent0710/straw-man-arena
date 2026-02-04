@@ -23,6 +23,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import GameOverDialog from "@/components/game-over-dialog";
 
 // Fixed arena dimensions - must match server
 const ARENA_WIDTH = 1200;
@@ -67,6 +68,9 @@ const GamePageContent = () => {
     const [spritesLoaded, setSpritesLoaded] = useState(false);
     const [loadingProgress, setLoadingProgress] = useState(0);
 
+    // Game over state
+    const [isGameOver, setIsGameOver] = useState(false);
+
     // Zustand stores
     const { players, setPlayers } = usePlayersStore();
     const { addCollidedPlayer, clearPlayers } = useCollidedPlayersStore();
@@ -83,6 +87,22 @@ const GamePageContent = () => {
         }
         prevGameRunningRef.current = gameRunning;
     }, [gameRunning, resetUsedQuestions]);
+
+    // Check if all players are infected (game over condition)
+    useEffect(() => {
+        // Only check when game is running and there are at least 2 players
+        if (!gameRunning || players.length < 2) {
+            return;
+        }
+
+        const allInfected = players.every((player) => player.isInfected);
+        
+        if (allInfected) {
+            setIsGameOver(true);
+            // Stop the game when all players are infected
+            socketRef.current?.send(JSON.stringify({ type: "game:stop" }));
+        }
+    }, [players, gameRunning]);
 
     // Preload all sprites on mount
     useEffect(() => {
@@ -173,6 +193,7 @@ const GamePageContent = () => {
             if (data.type === "players:reset") {
                 setIsCollided(false);
                 setIsDialogOpen(false);
+                setIsGameOver(false); // Auto close game over dialog on reset
                 clearPlayers();
 
                 setPlayers(data.payload);
@@ -193,7 +214,13 @@ const GamePageContent = () => {
     }, [addCollidedPlayer, clearPlayers, router, searchParams, setPlayers]);
 
     const handleStartGame = () => {
+        setIsGameOver(false);
         socketRef.current?.send(JSON.stringify({ type: "game:start" }));
+    };
+
+    const handleStartNewGame = () => {
+        setIsGameOver(false);
+        socketRef.current?.send(JSON.stringify({ type: "game:restart" }));
     };
 
     const handleStopGame = () => {
@@ -395,6 +422,12 @@ const GamePageContent = () => {
                     socketRef={socketRef}
                 />
             )}
+
+            <GameOverDialog
+                isOpen={isGameOver}
+                onStartNewGame={handleStartNewGame}
+                isHost={currentPlayerName === "Kent"}
+            />
         </div>
     );
 };
