@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
 const MOVEMENT_SPEED = 5;
+const INFECTED_MOVEMENT_SPEED = 5.05; // 1% faster than regular
 const SERVER_UPDATE_RATE = 50; // Send to server every 50ms (20 updates/sec)
 
 // Sprite paths for infected players
@@ -137,9 +138,12 @@ const Player: React.FC<PlayerComponentProps> = ({
             if (keys.has("d") || keys.has("arrowright")) dx += 1;
 
             if (dx !== 0 || dy !== 0) {
+                // Use faster speed for infected players (1% boost)
+                const speed = isInfected ? INFECTED_MOVEMENT_SPEED : MOVEMENT_SPEED;
+                
                 // Normalize diagonal movement
-                const normalizedDx = (dx / Math.hypot(dx, dy)) * MOVEMENT_SPEED;
-                const normalizedDy = (dy / Math.hypot(dx, dy)) * MOVEMENT_SPEED;
+                const normalizedDx = (dx / Math.hypot(dx, dy)) * speed;
+                const normalizedDy = (dy / Math.hypot(dx, dy)) * speed;
 
                 // Update direction for sprite
                 if (Math.abs(dx) >= Math.abs(dy)) {
