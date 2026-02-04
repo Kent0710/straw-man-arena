@@ -28,6 +28,26 @@ import {
 const ARENA_WIDTH = 1200;
 const ARENA_HEIGHT = 600;
 
+// All sprite paths to preload
+const ALL_SPRITES = [
+    // Infected sprites
+    "/assets/infected_players/INFECTED_IDLE__FRONT.png",
+    "/assets/infected_players/INFECTED_IDLE__BACK.png",
+    "/assets/infected_players/INFECTED_RUN__LEFT.png",
+    "/assets/infected_players/INFECTED_RUN__RIGHT.png",
+    "/assets/infected_players/INFECTED_ATTACK_INFECT.png",
+    // Male regular sprites
+    "/assets/regular%20players/MALE_IDLE__FRONT.png",
+    "/assets/regular%20players/MALE_IDLE__BACK.png",
+    "/assets/regular%20players/MALE_RUN__LEFT.png",
+    "/assets/regular%20players/MALE_RUN__RIGHT.png",
+    // Female regular sprites
+    "/assets/regular%20players/FEMALE_IDLE__FRONT.png",
+    "/assets/regular%20players/FEMALE_IDLE__BACK.png",
+    "/assets/regular%20players/FEMALE_RUN__LEFT.png",
+    "/assets/regular%20players/FEMALE_RUN__RIGHT.png",
+];
+
 const GamePageContent = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -42,6 +62,10 @@ const GamePageContent = () => {
 
     const [isCollided, setIsCollided] = useState(false);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // Sprite preloading state
+    const [spritesLoaded, setSpritesLoaded] = useState(false);
+    const [loadingProgress, setLoadingProgress] = useState(0);
 
     // Zustand stores
     const { players, setPlayers } = usePlayersStore();
@@ -59,6 +83,35 @@ const GamePageContent = () => {
         }
         prevGameRunningRef.current = gameRunning;
     }, [gameRunning, resetUsedQuestions]);
+
+    // Preload all sprites on mount
+    useEffect(() => {
+        let loadedCount = 0;
+        const totalSprites = ALL_SPRITES.length;
+        
+        const preloadImage = (src: string): Promise<void> => {
+            return new Promise((resolve) => {
+                const img = new window.Image();
+                img.onload = () => {
+                    loadedCount++;
+                    setLoadingProgress(Math.round((loadedCount / totalSprites) * 100));
+                    resolve();
+                };
+                img.onerror = () => {
+                    // Still count as loaded to not block the game
+                    loadedCount++;
+                    setLoadingProgress(Math.round((loadedCount / totalSprites) * 100));
+                    console.warn(`Failed to preload sprite: ${src}`);
+                    resolve();
+                };
+                img.src = src;
+            });
+        };
+        
+        Promise.all(ALL_SPRITES.map(preloadImage)).then(() => {
+            setSpritesLoaded(true);
+        });
+    }, []);
 
     useEffect(() => {
         // 1. Extract player info from query params
@@ -203,8 +256,11 @@ const GamePageContent = () => {
                                         ? () => handleStartGame()
                                         : () => handleStopGame()
                                 }
+                                disabled={!gameRunning && !spritesLoaded}
                             >
-                                {!gameRunning ? "Start Game" : "Stop Game"}
+                                {!gameRunning 
+                                    ? (spritesLoaded ? "Start Game" : `Loading... ${loadingProgress}%`)
+                                    : "Stop Game"}
                             </Button>
                         )}
                         <Link href={"/"} className="z-50">
